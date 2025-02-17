@@ -1,16 +1,26 @@
-Neural Search with OpenSearch
-This guide walks through setting up a Neural Search pipeline in OpenSearch using ML models, ingestion pipelines, k-NN indexing, and querying with both keyword and neural search.
+# Neural Search with OpenSearch
 
-1️⃣ Check Cluster Health
-sh
-Copy
-Edit
+This guide walks through setting up a **Neural Search pipeline** in OpenSearch using **ML models, ingestion pipelines, k-NN indexing, and querying with both keyword and neural search**.
+
+## **Summary**
+1. **Setup OpenSearch ML settings** ✅  
+2. **Register and deploy an ML model** ✅  
+3. **Create an ingest pipeline for embeddings** ✅  
+4. **Create a k-NN index** ✅  
+5. **Ingest text documents (automatic embedding generation)** ✅  
+6. **Perform keyword-based and neural search queries** ✅  
+
+🚀 **This setup allows OpenSearch to automatically convert text queries into embeddings and retrieve the most semantically relevant documents using vector search.**
+---
+
+## **1️⃣ Check Cluster Health**
+```sh
 GET /_cat/health
-To use OpenSearch-provided machine learning models without dedicated ML nodes, update the cluster settings:
+```
 
-json
-Copy
-Edit
+To use OpenSearch-provided machine learning models **without dedicated ML nodes**, update the cluster settings:
+
+```json
 PUT _cluster/settings
 {
   "persistent": {
@@ -29,31 +39,34 @@ PUT _cluster/settings
     }
   }
 }
-2️⃣ Set Up an ML Language Model
-Register a Model Group
-To register a model group with public access:
+```
 
-json
-Copy
-Edit
+---
+
+## **2️⃣ Set Up an ML Language Model**
+
+### **Register a Model Group**
+To register a **model group** with public access:
+```json
 POST /_plugins/_ml/model_groups/_register
 {
   "name": "NLP_model_group",
   "description": "A model group for NLP models",
   "access_mode": "public"
 }
-Response (Example):
+```
 
-json
-Copy
-Edit
+_Response (Example):_
+```json
 {
   "model_group_id": "IxEFEpUBnf1r1bXAYtqp"
 }
-Register a Model to the Model Group
-json
-Copy
-Edit
+```
+
+---
+
+### **Register a Model to the Model Group**
+```json
 POST /_plugins/_ml/models/_register
 {
   "name": "ml-model/huggingface/sentence-transformers/all-distilroberta-v1",
@@ -61,57 +74,56 @@ POST /_plugins/_ml/models/_register
   "model_group_id": "Z1eQf4oB5Vm0Tdw8EIP2",
   "model_format": "TORCH_SCRIPT"
 }
-Response (Example):
+```
 
-json
-Copy
-Edit
+_Response (Example):_
+```json
 {
   "task_id": "NecHEpUBjB2oluuy33AV"
 }
+```
+
 To check model registration status:
-
-sh
-Copy
-Edit
+```sh
 GET /_plugins/_ml/tasks/NecHEpUBjB2oluuy33AV
-If successful:
+```
 
-json
-Copy
-Edit
+If successful:
+```json
 {
   "model_id": "aVeif4oB5Vm0Tdw8zYO2",
   "task_type": "REGISTER_MODEL",
   "function_name": "TEXT_EMBEDDING",
   "state": "COMPLETED"
 }
-3️⃣ Deploy the Model
-json
-Copy
-Edit
-POST /_plugins/_ml/models/aVeif4oB5Vm0Tdw8zYO2/_deploy
-Response:
+```
 
-json
-Copy
-Edit
+---
+
+## **3️⃣ Deploy the Model**
+```json
+POST /_plugins/_ml/models/aVeif4oB5Vm0Tdw8zYO2/_deploy
+```
+
+_Response:_
+```json
 {
   "task_id": "ale6f4oB5Vm0Tdw8NINO",
   "status": "CREATED"
 }
+```
+
 To check deployment status:
-
-sh
-Copy
-Edit
+```sh
 GET /_plugins/_ml/tasks/ale6f4oB5Vm0Tdw8NINO
-4️⃣ Create an Ingest Pipeline
-The ingest pipeline automatically converts text into embeddings before indexing.
+```
 
-json
-Copy
-Edit
+---
+
+## **4️⃣ Create an Ingest Pipeline**
+The ingest pipeline **automatically converts text into embeddings** before indexing.
+
+```json
 PUT /_ingest/pipeline/nlp-ingest-pipeline
 {
   "description": "An NLP ingest pipeline",
@@ -126,18 +138,19 @@ PUT /_ingest/pipeline/nlp-ingest-pipeline
     }
   ]
 }
+```
+
 Verify the pipeline:
-
-sh
-Copy
-Edit
+```sh
 GET /_ingest/pipeline
-5️⃣ Create a k-NN Index
-Create an index with k-NN enabled to store embeddings.
+```
 
-json
-Copy
-Edit
+---
+
+## **5️⃣ Create a k-NN Index**
+Create an **index with k-NN enabled** to store embeddings.
+
+```json
 PUT /my-nlp-index
 {
   "settings": {
@@ -165,108 +178,8 @@ PUT /my-nlp-index
     }
   }
 }
-6️⃣ Ingest Documents
-Add documents to the index. The ingest pipeline automatically generates embeddings.
+```
 
-json
-Copy
-Edit
-PUT /my-nlp-index/_doc/1
-{
-  "text": "A West Virginia university women 's basketball team , officials , and a small gathering of fans are in a West Virginia arena.",
-  "id": "4319130149.jpg"
-}
+---
 
-PUT /my-nlp-index/_doc/2
-{
-  "text": "A wild animal races across an uncut field with a minimal amount of trees.",
-  "id": "1775029934.jpg"
-}
-Verify a document:
-
-sh
-Copy
-Edit
-GET /my-nlp-index/_doc/1
-7️⃣ Search Queries
-Traditional Keyword Search
-json
-Copy
-Edit
-GET /my-nlp-index/_search
-{
-  "_source": {
-    "excludes": ["passage_embedding"]
-  },
-  "query": {
-    "match": {
-      "text": {
-        "query": "wild west"
-      }
-    }
-  }
-}
-Neural Search
-Uses ML-generated embeddings instead of keyword matching.
-
-json
-Copy
-Edit
-GET /my-nlp-index/_search
-{
-  "_source": {
-    "excludes": ["passage_embedding"]
-  },
-  "query": {
-    "neural": {
-      "passage_embedding": {
-        "query_text": "wild west",
-        "model_id": "aVeif4oB5Vm0Tdw8zYO2",
-        "k": 5
-      }
-    }
-  }
-}
-8️⃣ Sample Neural Search Response
-json
-Copy
-Edit
-{
-  "took": 25,
-  "timed_out": false,
-  "hits": {
-    "total": {
-      "value": 5,
-      "relation": "eq"
-    },
-    "hits": [
-      {
-        "_index": "my-nlp-index",
-        "_id": "4",
-        "_score": 0.0158,
-        "_source": {
-          "text": "A man who is riding a wild horse in the rodeo is very near to falling off.",
-          "id": "4427058951.jpg"
-        }
-      },
-      {
-        "_index": "my-nlp-index",
-        "_id": "2",
-        "_score": 0.0157,
-        "_source": {
-          "text": "A wild animal races across an uncut field with a minimal amount of trees.",
-          "id": "1775029934.jpg"
-        }
-      }
-    ]
-  }
-}
-9️⃣ Summary
-Setup OpenSearch ML settings ✅
-Register and deploy an ML model ✅
-Create an ingest pipeline for embeddings ✅
-Create a k-NN index ✅
-Ingest text documents (automatic embedding generation) ✅
-Perform keyword-based and neural search queries ✅
-🚀 This setup allows OpenSearch to automatically convert text queries into embeddings and retrieve the most semantically relevant documents using vector search.
 
