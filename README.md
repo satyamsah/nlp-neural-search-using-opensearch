@@ -14,7 +14,6 @@ This guide walks through setting up a **Neural Search pipeline** in OpenSearch u
 🚀 **This setup allows OpenSearch to automatically convert text queries into embeddings and retrieve the most semantically relevant documents using vector search.**
 ---
 
-
 ## **1️⃣ Check Cluster Health**
 ```sh
 GET /_cat/health
@@ -123,8 +122,6 @@ GET /_plugins/_ml/tasks/ale6f4oB5Vm0Tdw8NINO
 ---
 
 ## **4️⃣ Create an Ingest Pipeline**
-The ingest pipeline **automatically converts text into embeddings** before indexing.
-
 ```json
 PUT /_ingest/pipeline/nlp-ingest-pipeline
 {
@@ -150,8 +147,6 @@ GET /_ingest/pipeline
 ---
 
 ## **5️⃣ Create a k-NN Index**
-Create an **index with k-NN enabled** to store embeddings.
-
 ```json
 PUT /my-nlp-index
 {
@@ -181,6 +176,50 @@ PUT /my-nlp-index
   }
 }
 ```
+
+---
+
+## **6️⃣ Ingest Documents**
+```json
+PUT /my-nlp-index/_doc/1
+{
+  "text": "A West Virginia university women's basketball team, officials, and a small gathering of fans are in a West Virginia arena.",
+  "id": "4319130149.jpg"
+}
+
+PUT /my-nlp-index/_doc/2
+{
+  "text": "A wild animal races across an uncut field with a minimal amount of trees.",
+  "id": "1775029934.jpg"
+}
+```
+
+---
+
+## **7️⃣ Search Queries**
+
+### **Neural Search**
+```json
+GET /my-nlp-index/_search
+{
+  "_source": { "excludes": ["passage_embedding"] },
+  "query": {
+    "neural": {
+      "passage_embedding": {
+        "query_text": "wild west",
+        "model_id": "aVeif4oB5Vm0Tdw8zYO2",
+        "k": 5
+      }
+    }
+  }
+}
+```
+
+---
+
+## **8️⃣ Summary**
+🚀 **This setup allows OpenSearch to automatically convert text queries into embeddings and retrieve the most semantically relevant documents using vector search.**
+
 
 ---
 
