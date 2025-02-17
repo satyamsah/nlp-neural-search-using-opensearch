@@ -10,8 +10,10 @@ This guide walks through setting up a **Neural Search pipeline** in OpenSearch u
 5. **Ingest text documents (automatic embedding generation)** ✅  
 6. **Perform keyword-based and neural search queries** ✅  
 
+
 🚀 **This setup allows OpenSearch to automatically convert text queries into embeddings and retrieve the most semantically relevant documents using vector search.**
 ---
+
 
 ## **1️⃣ Check Cluster Health**
 ```sh
